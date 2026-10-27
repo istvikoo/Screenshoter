@@ -18,6 +18,7 @@
 - Свої комбінації клавіш у налаштуваннях
 - Мова інтерфейсу: українська / English
 - Можна сховати іконку з рядка меню
+- За бажанням — лівий клік по іконці одразу знімає область, а меню відкривається правим кліком (вмикається в налаштуваннях)
 - Автозапуск при вході в систему (вмикається сам при першому запуску, вимкнути — в налаштуваннях)
 - Автооновлення з GitHub з перевіркою цифрового підпису (з версії 1.1.0)
 - Займає ~12 МБ пам'яті у фоні, 0% процесора; програма — ~440 КБ
@@ -104,6 +105,7 @@ It lives in the menu bar, takes no space in the Dock and does nothing in the bac
 - Set your own shortcuts in Settings
 - Interface in Ukrainian or English (follows the system language until you pick one)
 - Hide the menu bar icon if you want; the shortcuts keep working
+- Optionally make a left click on the icon capture an area right away, with the menu on right-click (off by default)
 - Launch at login, enabled automatically on first launch and easy to turn off in Settings
 - Auto-update from GitHub with digital signature verification (since 1.1.0)
 - About 12 MB of RAM and 0% CPU when idle; the app itself is about 440 KB
@@ -144,6 +146,9 @@ again while it's running (handy when the icon is hidden). There you can:
   You'll get a warning if the combination is already used by the other action or taken by another app.
 - **Show or hide the menu bar icon.** While it's hidden, shortcuts still work and the *Quit*
   button is available in Settings.
+- **Left-click the icon to capture an area.** Off by default. When it's on, a left click starts the
+  area selection right away, and the menu opens with a right-click or ⌃-click. Hovering the icon
+  shows a reminder.
 - **Launch at login.** If macOS asks for approval, Settings shows a button that opens Login Items.
 - **Also save screenshots to a folder.** The default is `~/Pictures/Screenshoter`; pick another one
   with *Choose…*. Files are named `Screenshoter 2026-10-27 17-45-12.png` and never overwrite each

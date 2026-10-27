@@ -18,6 +18,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let updater = Updater()
     private var updateItem: NSMenuItem?
     private var openFolderItem: NSMenuItem?
+    /// Меню іконки. У режимі «лівий клік — знімок» воно не прикріплене до іконки постійно,
+    /// а показується лише на правий клік.
+    private var menu = NSMenu()
 
     /// Звичайна іконка і «галочка» після знімка — створюються один раз.
     private let icon = NSImage(systemSymbolName: "camera.viewfinder", accessibilityDescription: nil)
@@ -50,7 +53,40 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         NotificationCenter.default.addObserver(forName: .statusIconVisibilityChanged, object: nil, queue: .main) {
             [weak self] _ in self?.statusItem.isVisible = Preferences.showStatusIcon
         }
+        NotificationCenter.default.addObserver(forName: .iconClickModeChanged, object: nil, queue: .main) {
+            [weak self] _ in self?.applyClickMode()
+        }
+        // Кліки по іконці ловимо самі, щоб розрізняти лівий і правий.
+        statusItem.button?.target = self
+        statusItem.button?.action = #selector(statusItemClicked)
+        statusItem.button?.sendAction(on: [.leftMouseUp, .rightMouseDown])
         buildMenu()
+    }
+
+    /// Звичайний режим: меню на будь-який клік (macOS відкриває його сама).
+    /// Режим «лівий клік — знімок»: меню не прикріплене, кліки обробляє statusItemClicked.
+    private func applyClickMode() {
+        statusItem.menu = Preferences.leftClickCapture ? nil : menu
+        statusItem.button?.toolTip = Preferences.leftClickCapture ? Text.iconTooltipLeftClick.s : Text.appName.s
+    }
+
+    @objc private func statusItemClicked() {
+        let event = NSApp.currentEvent
+        let wantsMenu = event?.type == .rightMouseDown || event?.modifierFlags.contains(.control) == true
+        if wantsMenu {
+            // Тимчасово прикріплюємо меню й «клікаємо» — так воно відкривається на штатному місці.
+            statusItem.menu = menu
+            statusItem.button?.performClick(nil)
+        } else {
+            capture(.area)
+        }
+    }
+
+    func menuDidClose(_ menu: NSMenu) {
+        // Після показу на правий клік знову відкріплюємо меню, щоб лівий клік робив знімок.
+        if Preferences.leftClickCapture {
+            DispatchQueue.main.async { [weak self] in self?.statusItem.menu = nil }
+        }
     }
 
     /// Меню будується заново при зміні мови.
@@ -58,7 +94,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         icon?.accessibilityDescription = Text.appName.s
         doneIcon?.accessibilityDescription = Text.done.s
         actionItems = [:]
-        let menu = NSMenu()
+        menu = NSMenu()
         menu.delegate = self
         for action in Action.allCases {
             let item = NSMenuItem(title: action.title, action: #selector(menuCapture(_:)), keyEquivalent: "")
@@ -83,7 +119,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(settings)
         menu.addItem(.separator())
         menu.addItem(NSMenuItem(title: Text.menuQuit.s, action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
-        statusItem.menu = menu
+        applyClickMode()
         updateMenuTitles()
     }
 

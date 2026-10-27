@@ -187,6 +187,10 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
         let showIcon = NSButton(checkboxWithTitle: Text.showIcon.s, target: self, action: #selector(showIconToggled(_:)))
         showIcon.state = Preferences.showStatusIcon ? .on : .off
 
+        let leftClick = NSButton(checkboxWithTitle: Text.leftClickCapture.s, target: self,
+                                 action: #selector(leftClickToggled(_:)))
+        leftClick.state = Preferences.leftClickCapture ? .on : .off
+
         let iconHint = NSTextField(wrappingLabelWithString: Text.iconHiddenHint.s)
         iconHint.textColor = .secondaryLabelColor
         iconHint.font = .systemFont(ofSize: NSFont.smallSystemFontSize)
@@ -251,7 +255,7 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
         let buttons = NSStackView(views: [reset, quit])
         buttons.spacing = 8
 
-        let stack = NSStackView(views: [grid, hint, statusLabel, showIcon, iconHint, launch, approval, saveToFolder, folder, autoUpdate, versionRow, buttons])
+        let stack = NSStackView(views: [grid, hint, statusLabel, showIcon, iconHint, leftClick, launch, approval, saveToFolder, folder, autoUpdate, versionRow, buttons])
         stack.orientation = .vertical
         stack.alignment = .leading
         stack.spacing = 14
@@ -273,6 +277,10 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
         refreshStatus()
         refreshLaunchAtLogin()
         refreshFolderRow()
+    }
+
+    @objc private func leftClickToggled(_ sender: NSButton) {
+        Preferences.leftClickCapture = sender.state == .on
     }
 
     @objc private func saveToFolderToggled(_ sender: NSButton) {

@@ -14,6 +14,7 @@ enum Keys {
     static let saveToFolder = "saveToFolder"
     static let saveFolderPath = "saveFolderPath"
     static let launchAtLoginDefaultApplied = "launchAtLoginDefaultApplied"
+    static let leftClickCapture = "leftClickCapture"
     static let updateAPIURL = "updateAPIURL"   // лише для тестів
     static func shortcut(_ action: Action) -> String { "shortcut.\(action.rawValue)" }
 }
@@ -21,6 +22,7 @@ enum Keys {
 extension Notification.Name {
     static let languageChanged = Notification.Name("ScreenshoterLanguageChanged")
     static let statusIconVisibilityChanged = Notification.Name("ScreenshoterStatusIconVisibilityChanged")
+    static let iconClickModeChanged = Notification.Name("ScreenshoterIconClickModeChanged")
 }
 
 enum Preferences {
@@ -32,6 +34,15 @@ enum Preferences {
         set {
             defaults.set(newValue, forKey: Keys.showStatusIcon)
             NotificationCenter.default.post(name: .statusIconVisibilityChanged, object: nil)
+        }
+    }
+
+    /// Лівий клік по іконці одразу знімає область, меню — правим кліком (за замовчуванням — ні).
+    static var leftClickCapture: Bool {
+        get { defaults.bool(forKey: Keys.leftClickCapture) }
+        set {
+            defaults.set(newValue, forKey: Keys.leftClickCapture)
+            NotificationCenter.default.post(name: .iconClickModeChanged, object: nil)
         }
     }
 

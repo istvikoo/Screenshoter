@@ -51,6 +51,7 @@ enum Text: CaseIterable {
     case updateAvailableTitle, updateAvailableBody, updateInstall, updateLater, updateSkip
     case autoCheckUpdates, versionLabel, checkNow
     case saveToFolder, chooseFolder, showInFinder, chooseFolderMessage, menuOpenFolder, saveFailed
+    case leftClickCapture, iconTooltipLeftClick
 
     var s: String { Text.table[Language.current]?[self] ?? Text.table[.en]![self]! }
 
@@ -101,6 +102,8 @@ enum Text: CaseIterable {
             .chooseFolderMessage: "Куди зберігати знімки?",
             .menuOpenFolder: "Відкрити папку зі знімками",
             .saveFailed: "Знімок у буфері, але зберегти його в %@ не вдалося: %@",
+            .leftClickCapture: "Лівий клік по іконці — знімок області (меню — правим кліком)",
+            .iconTooltipLeftClick: "Клік — знімок області · Правий клік — меню",
         ],
         .en: [
             .appName: "Screenshoter",
@@ -146,6 +149,8 @@ enum Text: CaseIterable {
             .chooseFolderMessage: "Where should screenshots be saved?",
             .menuOpenFolder: "Open Screenshots Folder",
             .saveFailed: "The screenshot is in the clipboard, but saving it to %@ failed: %@",
+            .leftClickCapture: "Left-click the icon to capture an area (right-click for the menu)",
+            .iconTooltipLeftClick: "Click — capture area · Right-click — menu",
         ],
     ]
 }
