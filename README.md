@@ -18,7 +18,7 @@
 - Свої комбінації клавіш у налаштуваннях
 - Мова інтерфейсу: українська / English
 - Можна сховати іконку з рядка меню
-- Автозапуск при вході в систему
+- Автозапуск при вході в систему (вмикається сам при першому запуску, вимкнути — в налаштуваннях)
 - Автооновлення з GitHub з перевіркою цифрового підпису (з версії 1.1.0)
 - Займає ~24 МБ пам'яті, 0% процесора у фоні
 - Універсальна програма: Apple Silicon та Intel
@@ -96,7 +96,7 @@ A tiny macOS screenshot tool: press a hotkey and the screenshot goes straight to
 - **⌥⇧S** — select an area (Space — pick a window, Esc — cancel)
 - **⌥⇧A** — full screen
 - Optionally also save every screenshot as a PNG to a folder of your choice
-- Custom shortcuts, Ukrainian / English UI, hideable menu bar icon, launch at login
+- Custom shortcuts, Ukrainian / English UI, hideable menu bar icon, launch at login (on by default for new installs)
 - Auto-update from GitHub Releases with Ed25519 signature verification (since 1.1.0)
 - ~24 MB RAM, universal (Apple Silicon + Intel), macOS 13+
 

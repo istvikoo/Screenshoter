@@ -20,6 +20,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var openFolderItem: NSMenuItem?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        LaunchAtLogin.applyDefaultOnFirstLaunch()   // до будь-якого запису налаштувань
         setupMenuBar()
         NotificationCenter.default.addObserver(self, selector: #selector(buildMenu),
                                                name: .languageChanged, object: nil)

@@ -59,6 +59,35 @@ enum LaunchAtLogin {
     }
 
     static func openSystemSettings() { SMAppService.openSystemSettingsLoginItems() }
+
+    // MARK: Увімкнено за замовчуванням
+
+    private static let defaultAppliedKey = "launchAtLoginDefaultApplied"
+
+    /// Ключі, які записують попередні версії. Якщо хоч один є — програмою вже користувались,
+    /// і ми не чіпаємо автозапуск: людина могла свідомо його вимкнути.
+    private static let existingUserKeys = [
+        "language", "showStatusIcon", "autoCheckUpdates", "lastUpdateCheck", "skippedUpdateVersion",
+        "saveToFolder", "saveFolderPath", "shortcut.1", "shortcut.2",
+    ]
+
+    /// Чи вмикати автозапуск зараз. Позначає, що рішення ухвалено, щоб більше не повторювати.
+    static func shouldEnableByDefault(bundlePath: String, defaults: UserDefaults) -> Bool {
+        if defaults.bool(forKey: defaultAppliedKey) { return false }
+        // Тестові копії (робочий стіл, dist/) в автозапуск не реєструємо — і рішення не ухвалюємо,
+        // щоб воно спрацювало, коли програму встановлять у «Програми».
+        guard bundlePath.hasPrefix("/Applications/") else { return false }
+        defaults.set(true, forKey: defaultAppliedKey)
+        return !existingUserKeys.contains { defaults.object(forKey: $0) != nil }
+    }
+
+    /// Викликається при запуску програми: при першому запуску вмикає автозапуск.
+    static func applyDefaultOnFirstLaunch() {
+        guard shouldEnableByDefault(bundlePath: Bundle.main.bundlePath, defaults: .standard),
+              SMAppService.mainApp.status == .notRegistered
+        else { return }
+        set(true)
+    }
 }
 
 /// Інші налаштування програми.
