@@ -1,7 +1,6 @@
 // Мови інтерфейсу. Щоб додати нову мову: новий case у Language і ще одна таблиця в Text.
 
 import Foundation
-import ServiceManagement
 
 enum Language: String, CaseIterable {
     case uk
@@ -15,97 +14,28 @@ enum Language: String, CaseIterable {
         }
     }
 
-    private static let defaultsKey = "language"
+    /// Кеш: Text.s викликається десятки разів на кожну побудову меню чи вікна.
+    private static var cached: Language?
 
     /// Обрана мова. Якщо користувач ще не обирав — за мовою системи.
     static var current: Language {
         get {
-            if let raw = UserDefaults.standard.string(forKey: defaultsKey), let lang = Language(rawValue: raw) {
-                return lang
-            }
-            let system = Locale.preferredLanguages.first ?? ""
-            return system.hasPrefix("uk") ? .uk : .en
+            if let cached { return cached }
+            let saved = UserDefaults.standard.string(forKey: Keys.language).flatMap(Language.init(rawValue:))
+            let lang = saved ?? ((Locale.preferredLanguages.first ?? "").hasPrefix("uk") ? .uk : .en)
+            cached = lang
+            return lang
         }
         set {
-            UserDefaults.standard.set(newValue.rawValue, forKey: defaultsKey)
+            cached = newValue
+            UserDefaults.standard.set(newValue.rawValue, forKey: Keys.language)
             NotificationCenter.default.post(name: .languageChanged, object: nil)
         }
     }
 }
 
-extension Notification.Name {
-    static let languageChanged = Notification.Name("ScreenshoterLanguageChanged")
-    static let statusIconVisibilityChanged = Notification.Name("ScreenshoterStatusIconVisibilityChanged")
-}
-
-/// Автозапуск при вході в систему (Системні параметри → Загальні → Об'єкти входу).
-enum LaunchAtLogin {
-    static var isEnabled: Bool { SMAppService.mainApp.status == .enabled }
-
-    /// Користувач має ще дозволити автозапуск у Системних параметрах.
-    static var needsApproval: Bool { SMAppService.mainApp.status == .requiresApproval }
-
-    /// Повертає текст помилки, якщо не вдалося.
-    @discardableResult
-    static func set(_ enabled: Bool) -> String? {
-        do {
-            if enabled { try SMAppService.mainApp.register() }
-            else { try SMAppService.mainApp.unregister() }
-            return nil
-        } catch {
-            NSLog("Автозапуск: \(error)")
-            return error.localizedDescription
-        }
-    }
-
-    static func openSystemSettings() { SMAppService.openSystemSettingsLoginItems() }
-
-    // MARK: Увімкнено за замовчуванням
-
-    private static let defaultAppliedKey = "launchAtLoginDefaultApplied"
-
-    /// Ключі, які записують попередні версії. Якщо хоч один є — програмою вже користувались,
-    /// і ми не чіпаємо автозапуск: людина могла свідомо його вимкнути.
-    private static let existingUserKeys = [
-        "language", "showStatusIcon", "autoCheckUpdates", "lastUpdateCheck", "skippedUpdateVersion",
-        "saveToFolder", "saveFolderPath", "shortcut.1", "shortcut.2",
-    ]
-
-    /// Чи вмикати автозапуск зараз. Позначає, що рішення ухвалено, щоб більше не повторювати.
-    static func shouldEnableByDefault(bundlePath: String, defaults: UserDefaults) -> Bool {
-        if defaults.bool(forKey: defaultAppliedKey) { return false }
-        // Тестові копії (робочий стіл, dist/) в автозапуск не реєструємо — і рішення не ухвалюємо,
-        // щоб воно спрацювало, коли програму встановлять у «Програми».
-        guard bundlePath.hasPrefix("/Applications/") else { return false }
-        defaults.set(true, forKey: defaultAppliedKey)
-        return !existingUserKeys.contains { defaults.object(forKey: $0) != nil }
-    }
-
-    /// Викликається при запуску програми: при першому запуску вмикає автозапуск.
-    static func applyDefaultOnFirstLaunch() {
-        guard shouldEnableByDefault(bundlePath: Bundle.main.bundlePath, defaults: .standard),
-              SMAppService.mainApp.status == .notRegistered
-        else { return }
-        set(true)
-    }
-}
-
-/// Інші налаштування програми.
-enum Preferences {
-    private static let showIconKey = "showStatusIcon"
-
-    /// Чи показувати іконку в рядку меню (за замовчуванням — так).
-    static var showStatusIcon: Bool {
-        get { UserDefaults.standard.object(forKey: showIconKey) as? Bool ?? true }
-        set {
-            UserDefaults.standard.set(newValue, forKey: showIconKey)
-            NotificationCenter.default.post(name: .statusIconVisibilityChanged, object: nil)
-        }
-    }
-}
-
 /// Усі тексти інтерфейсу. Виклик: Text.menuSettings.s або Text.duplicate.format(a, b)
-enum Text {
+enum Text: CaseIterable {
     case appName, done
     case actionArea, actionFullScreen
     case menuSettings, menuQuit

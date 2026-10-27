@@ -87,7 +87,7 @@ final class ShortcutField: NSButton {
         return nil
     }
 
-    func updateTitle() {
+    private func updateTitle() {
         title = shortcut?.displayString ?? Text.notAssigned.s
     }
 }
@@ -98,6 +98,10 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
     private let hotKeys: HotKeyManager
     private let updater: Updater
     private let onShortcutsChanged: () -> Void
+    private let onClose: () -> Void
+
+    /// Ширина вмісту вікна; довгі підказки переносяться в її межах.
+    private static let contentWidth: CGFloat = 400
 
     private var fields: [Action: ShortcutField] = [:]
     private let statusLabel = NSTextField(wrappingLabelWithString: "")
@@ -109,12 +113,14 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
     private weak var folderPathLabel: NSTextField?
     private weak var folderRow: NSStackView?
 
-    init(hotKeys: HotKeyManager, updater: Updater, onShortcutsChanged: @escaping () -> Void) {
+    init(hotKeys: HotKeyManager, updater: Updater,
+         onShortcutsChanged: @escaping () -> Void, onClose: @escaping () -> Void) {
         self.hotKeys = hotKeys
         self.updater = updater
         self.onShortcutsChanged = onShortcutsChanged
+        self.onClose = onClose
 
-        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 420, height: 200),
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: Self.contentWidth + 40, height: 200),
                               styleMask: [.titled, .closable], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false
         super.init(window: window)
@@ -225,7 +231,7 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
         // Оновлення
         let autoUpdate = NSButton(checkboxWithTitle: Text.autoCheckUpdates.s, target: self,
                                   action: #selector(autoUpdateToggled(_:)))
-        autoUpdate.state = Updater.autoCheck ? .on : .off
+        autoUpdate.state = Preferences.autoCheckUpdates ? .on : .off
         let version = NSTextField(labelWithString: Text.versionLabel.format(Updater.currentVersion))
         version.textColor = .secondaryLabelColor
         let checkNow = NSButton(title: Text.checkNow.s, target: self, action: #selector(checkUpdatesNow))
@@ -258,11 +264,11 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
             stack.trailingAnchor.constraint(equalTo: content.trailingAnchor),
             stack.topAnchor.constraint(equalTo: content.topAnchor),
             stack.bottomAnchor.constraint(equalTo: content.bottomAnchor),
-            hint.widthAnchor.constraint(equalToConstant: 400),
-            statusLabel.widthAnchor.constraint(equalToConstant: 400),
-            iconHint.widthAnchor.constraint(equalToConstant: 400),
-            approvalText.widthAnchor.constraint(equalToConstant: 400),
-            folder.widthAnchor.constraint(lessThanOrEqualToConstant: 370),
+            hint.widthAnchor.constraint(equalToConstant: Self.contentWidth),
+            statusLabel.widthAnchor.constraint(equalToConstant: Self.contentWidth),
+            iconHint.widthAnchor.constraint(equalToConstant: Self.contentWidth),
+            approvalText.widthAnchor.constraint(equalToConstant: Self.contentWidth),
+            folder.widthAnchor.constraint(lessThanOrEqualToConstant: Self.contentWidth - 30),
         ])
         refreshStatus()
         refreshLaunchAtLogin()
@@ -308,7 +314,7 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
     }
 
     @objc private func autoUpdateToggled(_ sender: NSButton) {
-        Updater.autoCheck = sender.state == .on
+        Preferences.autoCheckUpdates = sender.state == .on
     }
 
     @objc private func checkUpdatesNow() {
@@ -383,5 +389,7 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
 
     func windowWillClose(_ notification: Notification) {
         fields.values.forEach { $0.stopRecording() }
+        // Звільняємо вікно вже після того, як AppKit його закриє.
+        DispatchQueue.main.async { [onClose] in onClose() }
     }
 }

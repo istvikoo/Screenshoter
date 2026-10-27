@@ -19,6 +19,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var updateItem: NSMenuItem?
     private var openFolderItem: NSMenuItem?
 
+    /// Звичайна іконка і «галочка» після знімка — створюються один раз.
+    private let icon = NSImage(systemSymbolName: "camera.viewfinder", accessibilityDescription: nil)
+    private let doneIcon = NSImage(systemSymbolName: "checkmark.circle.fill", accessibilityDescription: nil)
+    private var flashGeneration = 0
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         LaunchAtLogin.applyDefaultOnFirstLaunch()   // до будь-якого запису налаштувань
         setupMenuBar()
@@ -26,7 +31,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                                                name: .languageChanged, object: nil)
         hotKeys.onPress = { [weak self] action in self?.capture(action) }
         hotKeys.reload()
-        updateMenuTitles()
         updater.onStateChange = { [weak self] in self?.updateUpdateItem() }
         updater.start()
     }
@@ -41,8 +45,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     private func setupMenuBar() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-        statusItem.button?.image = NSImage(systemSymbolName: "camera.viewfinder",
-                                           accessibilityDescription: Text.appName.s)
+        statusItem.button?.image = icon
         statusItem.isVisible = Preferences.showStatusIcon
         NotificationCenter.default.addObserver(forName: .statusIconVisibilityChanged, object: nil, queue: .main) {
             [weak self] _ in self?.statusItem.isVisible = Preferences.showStatusIcon
@@ -52,7 +55,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     /// Меню будується заново при зміні мови.
     @objc private func buildMenu() {
-        statusItem.button?.image?.accessibilityDescription = Text.appName.s
+        icon?.accessibilityDescription = Text.appName.s
+        doneIcon?.accessibilityDescription = Text.done.s
         actionItems = [:]
         let menu = NSMenu()
         menu.delegate = self
@@ -125,10 +129,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     @objc private func openSettings() {
         if settingsWindow == nil {
-            settingsWindow = SettingsWindowController(hotKeys: hotKeys, updater: updater) { [weak self] in
+            settingsWindow = SettingsWindowController(hotKeys: hotKeys, updater: updater, onShortcutsChanged: { [weak self] in
                 self?.hotKeys.reload()
                 self?.updateMenuTitles()
-            }
+            }, onClose: { [weak self] in
+                // Вікно потрібне рідко — звільняємо його після закриття, щоб наступне
+                // відкриття перевикористало цю пам'ять, а не додавало нову.
+                self?.settingsWindow = nil
+            })
         }
         settingsWindow?.show()
     }
@@ -178,11 +186,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     // Коротко міняємо іконку, щоб було видно, що знімок у буфері.
+    // Лічильник потрібен, щоб при двох знімках поспіль іконку повертала лише остання анімація.
     private func flashIcon() {
-        let original = statusItem.button?.image
-        statusItem.button?.image = NSImage(systemSymbolName: "checkmark.circle.fill", accessibilityDescription: Text.done.s)
+        flashGeneration += 1
+        let generation = flashGeneration
+        statusItem.button?.image = doneIcon
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { [weak self] in
-            self?.statusItem.button?.image = original
+            guard let self, generation == self.flashGeneration else { return }
+            self.statusItem.button?.image = self.icon
         }
     }
 }

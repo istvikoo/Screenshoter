@@ -6,18 +6,26 @@ set -e
 cd "$(dirname "$0")"
 
 APP="Screenshoter.app"
-VERSION="1.2.0"   # версія програми — береться і для установщика
+VERSION="1.2.1"   # версія програми — береться і для установщика
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp Resources/AppIcon.icns "$APP/Contents/Resources/"
 
-# Універсальна програма: Apple Silicon (arm64) + Intel (x86_64).
+# Універсальна програма: Apple Silicon (arm64) + Intel (x86_64), обидві збираються паралельно.
+#   -Osize -wmo  — оптимізація розміру по всьому модулю (програма майже весь час спить,
+#                  тож швидкість коду неважлива, а розмір — так)
+#   strip -x     — прибрати локальні символи налагодження
 BUILD_TMP=$(mktemp -d)
+trap 'rm -rf "$BUILD_TMP"' EXIT
+PIDS=()
 for ARCH in arm64 x86_64; do
-    swiftc -O -swift-version 5 -target $ARCH-apple-macos13.0 *.swift -o "$BUILD_TMP/Screenshoter-$ARCH"
+    swiftc -Osize -wmo -swift-version 5 -target $ARCH-apple-macos13.0 -Xlinker -dead_strip \
+           *.swift -o "$BUILD_TMP/Screenshoter-$ARCH" &
+    PIDS+=($!)
 done
+for PID in $PIDS; do wait $PID; done   # з set -e скрипт зупиниться, якщо хоч одна збірка впала
 lipo -create "$BUILD_TMP"/Screenshoter-* -output "$APP/Contents/MacOS/Screenshoter"
-rm -rf "$BUILD_TMP"
+strip -x "$APP/Contents/MacOS/Screenshoter"
 
 cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>

@@ -120,13 +120,22 @@ struct Shortcut: Codable, Equatable {
 enum ShortcutStore {
     private static let disabledMarker = "none"
 
-    private static func key(_ action: Action) -> String { "shortcut.\(action.rawValue)" }
+    /// Кеш, щоб не розбирати JSON з диска при кожному відкритті меню.
+    /// Значення — Optional: nil усередині означає «комбінацію вимкнено».
+    private static var cache: [Action: Shortcut?] = [:]
 
     /// nil — комбінацію вимкнено користувачем.
     static func shortcut(for action: Action) -> Shortcut? {
+        if let cached = cache[action] { return cached }
+        let loaded = load(action)
+        cache[action] = .some(loaded)
+        return loaded
+    }
+
+    private static func load(_ action: Action) -> Shortcut? {
         let defaults = UserDefaults.standard
-        if defaults.string(forKey: key(action)) == disabledMarker { return nil }
-        if let data = defaults.data(forKey: key(action)),
+        if defaults.string(forKey: Keys.shortcut(action)) == disabledMarker { return nil }
+        if let data = defaults.data(forKey: Keys.shortcut(action)),
            let saved = try? JSONDecoder().decode(Shortcut.self, from: data) {
             return saved
         }
@@ -136,14 +145,16 @@ enum ShortcutStore {
     static func set(_ shortcut: Shortcut?, for action: Action) {
         let defaults = UserDefaults.standard
         if let shortcut, let data = try? JSONEncoder().encode(shortcut) {
-            defaults.set(data, forKey: key(action))
+            defaults.set(data, forKey: Keys.shortcut(action))
         } else {
-            defaults.set(disabledMarker, forKey: key(action))
+            defaults.set(disabledMarker, forKey: Keys.shortcut(action))
         }
+        cache[action] = .some(shortcut)
     }
 
     static func resetAll() {
-        Action.allCases.forEach { UserDefaults.standard.removeObject(forKey: key($0)) }
+        Action.allCases.forEach { UserDefaults.standard.removeObject(forKey: Keys.shortcut($0)) }
+        cache = [:]
     }
 }
 

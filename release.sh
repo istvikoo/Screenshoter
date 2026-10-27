@@ -25,9 +25,15 @@ git rev-parse -q --verify "refs/tags/$TAG" >/dev/null && fail "Тег $TAG уж�
 gh auth status >/dev/null 2>&1 || fail "gh не авторизований: gh auth login"
 [[ -z "$NOTES_FILE" || -f "$NOTES_FILE" ]] || fail "Немає файлу з описом: $NOTES_FILE"
 
+# Інструмент ключів компілюємо один раз, а не запускаємо через інтерпретатор тричі.
+TOOLS=$(mktemp -d)
+trap 'rm -rf "$TOOLS"' EXIT
+swiftc -O Tools/updatekey.swift -o "$TOOLS/updatekey"
+UPDATEKEY="$TOOLS/updatekey"
+
 # Публічний ключ у програмі має відповідати приватному ключу на цьому Mac.
 APP_KEY=$(sed -n 's/.*publicKeyBase64 = "\([^"]*\)".*/\1/p' Updater.swift)
-MY_KEY=$(swift Tools/updatekey.swift public)
+MY_KEY=$("$UPDATEKEY" public)
 [[ "$APP_KEY" == "$MY_KEY" ]] || fail "Ключ в Updater.swift не збігається з вашим ключем оновлень"
 
 echo "→ Реліз $TAG"
@@ -35,13 +41,12 @@ echo "→ Реліз $TAG"
 # --- Збірка й підпис ---
 ./make_installer.sh
 PKG="dist/Screenshoter-$VERSION.pkg"
-swift Tools/updatekey.swift sign "$PKG" > "$PKG.sig"
-swift Tools/updatekey.swift verify "$PKG" "$(cat "$PKG.sig")"
+"$UPDATEKEY" sign "$PKG" > "$PKG.sig"
+"$UPDATEKEY" verify "$PKG" "$(cat "$PKG.sig")"
 SHA=$(shasum -a 256 "$PKG" | cut -d' ' -f1)
 
 # --- Опис релізу ---
-NOTES=$(mktemp)
-trap 'rm -f "$NOTES"' EXIT
+NOTES="$TOOLS/notes.md"
 if [[ -n "$NOTES_FILE" ]]; then
     cat "$NOTES_FILE" > "$NOTES"
 else

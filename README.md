@@ -20,7 +20,7 @@
 - Можна сховати іконку з рядка меню
 - Автозапуск при вході в систему (вмикається сам при першому запуску, вимкнути — в налаштуваннях)
 - Автооновлення з GitHub з перевіркою цифрового підпису (з версії 1.1.0)
-- Займає ~24 МБ пам'яті, 0% процесора у фоні
+- Займає ~12 МБ пам'яті у фоні, 0% процесора; програма — ~440 КБ
 - Універсальна програма: Apple Silicon та Intel
 
 ## Встановлення
@@ -78,7 +78,8 @@
 | `main.swift` | меню в рядку меню, знімок |
 | `Shortcuts.swift` | комбінації клавіш: збереження, назви, реєстрація |
 | `SettingsWindow.swift` | вікно налаштувань |
-| `Localization.swift` | переклади, автозапуск, інші налаштування |
+| `Preferences.swift` | налаштування (усі ключі в одному місці) й автозапуск |
+| `Localization.swift` | переклади українською та англійською |
 | `ScreenshotSaver.swift` | збереження знімків у папку |
 | `Updater.swift` | перевірка, завантаження й перевірка підпису оновлень |
 | `Tools/updatekey.swift` | ключі підпису оновлень |
@@ -98,7 +99,7 @@ A tiny macOS screenshot tool: press a hotkey and the screenshot goes straight to
 - Optionally also save every screenshot as a PNG to a folder of your choice
 - Custom shortcuts, Ukrainian / English UI, hideable menu bar icon, launch at login (on by default for new installs)
 - Auto-update from GitHub Releases with Ed25519 signature verification (since 1.1.0)
-- ~24 MB RAM, universal (Apple Silicon + Intel), macOS 13+
+- ~12 MB RAM when idle, ~440 KB binary, universal (Apple Silicon + Intel), macOS 13+
 
 **Install:** download the `.pkg` from [Releases](https://github.com/istvikoo/Screenshoter/releases), run it,
 and allow **Screen Recording** on the first capture. The installer is not signed with an Apple Developer ID,

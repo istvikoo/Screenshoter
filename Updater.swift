@@ -20,7 +20,7 @@ final class Updater {
     /// Для тестів можна підмінити адресу: defaults write local.screenshoter updateAPIURL <url>.
     /// Підпис перевіряється все одно, тож чужий файл так не підсунути.
     private var apiURL: URL {
-        if let s = UserDefaults.standard.string(forKey: "updateAPIURL"), let url = URL(string: s) { return url }
+        if let s = UserDefaults.standard.string(forKey: Keys.updateAPIURL), let url = URL(string: s) { return url }
         return Updater.defaultAPI
     }
 
@@ -47,28 +47,19 @@ final class Updater {
 
     private var timer: Timer?
 
-    // MARK: - Налаштування
-
-    private static let autoCheckKey = "autoCheckUpdates"
-    private static let lastCheckKey = "lastUpdateCheck"
-    private static let skippedKey = "skippedUpdateVersion"
-
-    static var autoCheck: Bool {
-        get { UserDefaults.standard.object(forKey: autoCheckKey) as? Bool ?? true }
-        set { UserDefaults.standard.set(newValue, forKey: autoCheckKey) }
-    }
-
     // MARK: - Автоперевірка
 
     func start() {
         // Перша перевірка — трохи після запуску, далі щогодини дивимося, чи минула доба.
         DispatchQueue.main.asyncAfter(deadline: .now() + 10) { [weak self] in self?.checkIfDue() }
-        timer = Timer.scheduledTimer(withTimeInterval: 3600, repeats: true) { [weak self] _ in self?.checkIfDue() }
+        let timer = Timer.scheduledTimer(withTimeInterval: 3600, repeats: true) { [weak self] _ in self?.checkIfDue() }
+        timer.tolerance = 600   // система може зсунути пробудження й об'єднати його з іншими — економія енергії
+        self.timer = timer
     }
 
     private func checkIfDue() {
-        guard Updater.autoCheck else { return }
-        let last = UserDefaults.standard.object(forKey: Updater.lastCheckKey) as? Date ?? .distantPast
+        guard Preferences.autoCheckUpdates else { return }
+        let last = UserDefaults.standard.object(forKey: Keys.lastUpdateCheck) as? Date ?? .distantPast
         if Date().timeIntervalSince(last) > 24 * 3600 { check(userInitiated: false) }
     }
 
@@ -77,6 +68,7 @@ final class Updater {
     func check(userInitiated: Bool) {
         if case .checking = state { return }
         if case .downloading = state { return }
+        let previous = state
         state = .checking
 
         var request = URLRequest(url: apiURL, timeoutInterval: 20)
@@ -85,7 +77,8 @@ final class Updater {
 
         URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
             DispatchQueue.main.async {
-                self?.handleCheck(data: data, response: response, error: error, userInitiated: userInitiated)
+                self?.handleCheck(data: data, response: response, error: error,
+                                  userInitiated: userInitiated, previous: previous)
             }
         }.resume()
     }
@@ -102,11 +95,12 @@ final class Updater {
         let browser_download_url: URL
     }
 
-    private func handleCheck(data: Data?, response: URLResponse?, error: Error?, userInitiated: Bool) {
-        state = .idle
-        UserDefaults.standard.set(Date(), forKey: Updater.lastCheckKey)
-
+    private func handleCheck(data: Data?, response: URLResponse?, error: Error?,
+                             userInitiated: Bool, previous: State) {
+        // Невдала перевірка (немає інтернету, збій GitHub) не рахується: спробуємо знову
+        // за годину, а вже знайдене оновлення лишається в меню.
         if let error {
+            state = previous
             if userInitiated { alert(Text.updateCheckFailed.format(error.localizedDescription)) }
             return
         }
@@ -114,9 +108,12 @@ final class Updater {
         guard status == 200, let data, let gh = try? JSONDecoder().decode(GHRelease.self, from: data),
               gh.draft != true, gh.prerelease != true
         else {
+            state = previous
             if userInitiated { alert(Text.updateCheckFailed.format("HTTP \(status)")) }
             return
         }
+        state = .idle
+        UserDefaults.standard.set(Date(), forKey: Keys.lastUpdateCheck)
 
         let version = gh.tag_name.hasPrefix("v") ? String(gh.tag_name.dropFirst()) : gh.tag_name
         guard Updater.isNewer(version, than: Updater.currentVersion) else {
@@ -135,7 +132,7 @@ final class Updater {
         state = .available(release)
 
         // Автоперевірка не набридає версією, яку користувач вирішив пропустити.
-        if !userInitiated && UserDefaults.standard.string(forKey: Updater.skippedKey) == version { return }
+        if !userInitiated && UserDefaults.standard.string(forKey: Keys.skippedUpdateVersion) == version { return }
         offer(release)
     }
 
@@ -165,10 +162,10 @@ final class Updater {
 
         switch alert.runModal() {
         case .alertFirstButtonReturn:
-            UserDefaults.standard.removeObject(forKey: Updater.skippedKey)
+            UserDefaults.standard.removeObject(forKey: Keys.skippedUpdateVersion)
             install(release)
         case .alertThirdButtonReturn:
-            UserDefaults.standard.set(release.version, forKey: Updater.skippedKey)
+            UserDefaults.standard.set(release.version, forKey: Keys.skippedUpdateVersion)
         default:
             break
         }
@@ -189,6 +186,11 @@ final class Updater {
             guard let self else { return }
             guard case .success(let sigTemp) = sigResult else { return self.downloadFailed(sigResult) }
             self.download(release.pkgURL) { pkgResult in
+                // Тимчасові файли прибираємо за будь-якого результату.
+                defer {
+                    try? FileManager.default.removeItem(at: sigTemp)
+                    if case .success(let pkgTemp) = pkgResult { try? FileManager.default.removeItem(at: pkgTemp) }
+                }
                 guard case .success(let pkgTemp) = pkgResult else { return self.downloadFailed(pkgResult) }
                 do {
                     try FileManager.default.moveItem(at: pkgTemp, to: pkgFile)

@@ -4,25 +4,22 @@
 import Cocoa
 
 enum ScreenshotSaver {
-    private static let enabledKey = "saveToFolder"
-    private static let folderKey = "saveFolderPath"
-
     static var isEnabled: Bool {
-        get { UserDefaults.standard.bool(forKey: enabledKey) }   // за замовчуванням вимкнено
-        set { UserDefaults.standard.set(newValue, forKey: enabledKey) }
+        get { Preferences.saveToFolder }
+        set { Preferences.saveToFolder = newValue }
     }
 
-    /// За замовчуванням — ~/Pictures/Screenshoter.
     static var folder: URL {
-        get {
-            if let path = UserDefaults.standard.string(forKey: folderKey) {
-                return URL(fileURLWithPath: path, isDirectory: true)
-            }
-            return FileManager.default.urls(for: .picturesDirectory, in: .userDomainMask)[0]
-                .appendingPathComponent("Screenshoter", isDirectory: true)
-        }
-        set { UserDefaults.standard.set(newValue.path, forKey: folderKey) }
+        get { Preferences.saveFolder }
+        set { Preferences.saveFolder = newValue }
     }
+
+    private static let fileDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd HH-mm-ss"
+        return formatter
+    }()
 
     /// Шлях для показу: /Users/імʼя/Pictures/… → ~/Pictures/…
     static var folderDisplayPath: String { (folder.path as NSString).abbreviatingWithTildeInPath }
@@ -53,10 +50,7 @@ enum ScreenshotSaver {
 
     /// «Screenshoter 2026-10-27 17-45-12.png», а якщо такий уже є — «… (2).png».
     private static func uniqueFile(in folder: URL) -> URL {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.dateFormat = "yyyy-MM-dd HH-mm-ss"
-        let base = "Screenshoter \(formatter.string(from: Date()))"
+        let base = "Screenshoter \(fileDateFormatter.string(from: Date()))"
 
         var url = folder.appendingPathComponent(base + ".png")
         var n = 2
