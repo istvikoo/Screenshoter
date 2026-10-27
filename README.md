@@ -14,6 +14,7 @@
 - **⌥⇧S** — виділити область мишкою (Пробіл — вибрати вікно, Esc — скасувати)
 - **⌥⇧A** — весь екран
 - Знімок одразу в буфері обміну — просто **⌘V** куди завгодно, без файлів на диску
+- За бажанням — ще й зберігати кожен знімок PNG-файлом у вибрану папку (вмикається в налаштуваннях)
 - Свої комбінації клавіш у налаштуваннях
 - Мова інтерфейсу: українська / English
 - Можна сховати іконку з рядка меню
@@ -78,6 +79,7 @@
 | `Shortcuts.swift` | комбінації клавіш: збереження, назви, реєстрація |
 | `SettingsWindow.swift` | вікно налаштувань |
 | `Localization.swift` | переклади, автозапуск, інші налаштування |
+| `ScreenshotSaver.swift` | збереження знімків у папку |
 | `Updater.swift` | перевірка, завантаження й перевірка підпису оновлень |
 | `Tools/updatekey.swift` | ключі підпису оновлень |
 | `release.sh` | публікація релізу на GitHub |
@@ -93,6 +95,7 @@ A tiny macOS screenshot tool: press a hotkey and the screenshot goes straight to
 
 - **⌥⇧S** — select an area (Space — pick a window, Esc — cancel)
 - **⌥⇧A** — full screen
+- Optionally also save every screenshot as a PNG to a folder of your choice
 - Custom shortcuts, Ukrainian / English UI, hideable menu bar icon, launch at login
 - Auto-update from GitHub Releases with Ed25519 signature verification (since 1.1.0)
 - ~24 MB RAM, universal (Apple Silicon + Intel), macOS 13+

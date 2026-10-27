@@ -106,6 +106,8 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
     private weak var iconHint: NSTextField?
     private weak var launchCheckbox: NSButton?
     private weak var approvalRow: NSView?
+    private weak var folderPathLabel: NSTextField?
+    private weak var folderRow: NSStackView?
 
     init(hotKeys: HotKeyManager, updater: Updater, onShortcutsChanged: @escaping () -> Void) {
         self.hotKeys = hotKeys
@@ -200,6 +202,26 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
         approval.spacing = 6
         approvalRow = approval
 
+        // Збереження в папку
+        let saveToFolder = NSButton(checkboxWithTitle: Text.saveToFolder.s, target: self,
+                                    action: #selector(saveToFolderToggled(_:)))
+        saveToFolder.state = ScreenshotSaver.isEnabled ? .on : .off
+
+        let folderPath = NSTextField(labelWithString: ScreenshotSaver.folderDisplayPath)
+        folderPath.textColor = .secondaryLabelColor
+        folderPath.lineBreakMode = .byTruncatingMiddle
+        folderPath.toolTip = ScreenshotSaver.folder.path
+        folderPath.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        folderPathLabel = folderPath
+        let choose = NSButton(title: Text.chooseFolder.s, target: self, action: #selector(chooseFolder))
+        choose.controlSize = .small
+        let reveal = NSButton(title: Text.showInFinder.s, target: self, action: #selector(revealFolder))
+        reveal.controlSize = .small
+        let folder = NSStackView(views: [folderPath, choose, reveal])
+        folder.spacing = 8
+        folder.edgeInsets = NSEdgeInsets(top: 0, left: 20, bottom: 0, right: 0)  // під галочкою
+        folderRow = folder
+
         // Оновлення
         let autoUpdate = NSButton(checkboxWithTitle: Text.autoCheckUpdates.s, target: self,
                                   action: #selector(autoUpdateToggled(_:)))
@@ -223,7 +245,7 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
         let buttons = NSStackView(views: [reset, quit])
         buttons.spacing = 8
 
-        let stack = NSStackView(views: [grid, hint, statusLabel, showIcon, iconHint, launch, approval, autoUpdate, versionRow, buttons])
+        let stack = NSStackView(views: [grid, hint, statusLabel, showIcon, iconHint, launch, approval, saveToFolder, folder, autoUpdate, versionRow, buttons])
         stack.orientation = .vertical
         stack.alignment = .leading
         stack.spacing = 14
@@ -240,9 +262,42 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
             statusLabel.widthAnchor.constraint(equalToConstant: 400),
             iconHint.widthAnchor.constraint(equalToConstant: 400),
             approvalText.widthAnchor.constraint(equalToConstant: 400),
+            folder.widthAnchor.constraint(lessThanOrEqualToConstant: 370),
         ])
         refreshStatus()
         refreshLaunchAtLogin()
+        refreshFolderRow()
+    }
+
+    @objc private func saveToFolderToggled(_ sender: NSButton) {
+        ScreenshotSaver.isEnabled = sender.state == .on
+        refreshFolderRow()
+    }
+
+    @objc private func chooseFolder() {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.canCreateDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.message = Text.chooseFolderMessage.s
+        panel.prompt = Text.chooseFolder.s.replacingOccurrences(of: "…", with: "")
+        panel.directoryURL = ScreenshotSaver.folder
+        guard let window else { return }
+        panel.beginSheetModal(for: window) { [weak self] response in
+            guard response == .OK, let url = panel.url else { return }
+            ScreenshotSaver.folder = url
+            self?.refreshFolderRow()
+        }
+    }
+
+    @objc private func revealFolder() { ScreenshotSaver.openFolderInFinder() }
+
+    private func refreshFolderRow() {
+        folderPathLabel?.stringValue = ScreenshotSaver.folderDisplayPath
+        folderPathLabel?.toolTip = ScreenshotSaver.folder.path
+        // Рядок з папкою активний тільки разом з галочкою.
+        folderRow?.views.forEach { ($0 as? NSControl)?.isEnabled = ScreenshotSaver.isEnabled }
     }
 
     @objc private func launchAtLoginToggled(_ sender: NSButton) {

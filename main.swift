@@ -17,6 +17,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var actionItems: [Action: NSMenuItem] = [:]
     private let updater = Updater()
     private var updateItem: NSMenuItem?
+    private var openFolderItem: NSMenuItem?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupMenuBar()
@@ -61,6 +62,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             actionItems[action] = item
             menu.addItem(item)
         }
+        let openFolder = NSMenuItem(title: Text.menuOpenFolder.s, action: #selector(openScreenshotsFolder), keyEquivalent: "")
+        openFolder.target = self
+        openFolder.isHidden = !ScreenshotSaver.isEnabled
+        openFolderItem = openFolder
+        menu.addItem(openFolder)
         menu.addItem(.separator())
         let update = NSMenuItem(title: "", action: #selector(updateClicked), keyEquivalent: "")
         update.target = self
@@ -76,7 +82,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         updateMenuTitles()
     }
 
-    func menuWillOpen(_ menu: NSMenu) { updateMenuTitles() }
+    func menuWillOpen(_ menu: NSMenu) {
+        updateMenuTitles()
+        openFolderItem?.isHidden = !ScreenshotSaver.isEnabled
+    }
+
+    @objc private func openScreenshotsFolder() { ScreenshotSaver.openFolderInFinder() }
 
     private func updateMenuTitles() {
         for (action, item) in actionItems {
@@ -129,13 +140,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         guard !isCapturing else { return }
         isCapturing = true
 
+        // Лічильник змін буфера: якщо знімок скасували (Esc), він не зміниться,
+        // і ми не збережемо старий вміст буфера як новий знімок.
+        let changeCountBefore = NSPasteboard.general.changeCount
+
         let task = Process()
         task.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
         task.arguments = action.captureArgs
         task.terminationHandler = { [weak self] _ in
             DispatchQueue.main.async {
-                self?.isCapturing = false
-                self?.flashIcon()
+                guard let self else { return }
+                self.isCapturing = false
+                guard NSPasteboard.general.changeCount != changeCountBefore else { return }  // скасовано
+                self.flashIcon()
+                if ScreenshotSaver.isEnabled {
+                    ScreenshotSaver.saveClipboard { error in
+                        if let error { self.showSaveError(error) }
+                    }
+                }
             }
         }
         do {
@@ -146,11 +168,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
 
+    private func showSaveError(_ error: String) {
+        let alert = NSAlert()
+        alert.messageText = Text.appName.s
+        alert.informativeText = Text.saveFailed.format(ScreenshotSaver.folderDisplayPath, error)
+        NSApp.activate(ignoringOtherApps: true)
+        alert.runModal()
+    }
+
     // Коротко міняємо іконку, щоб було видно, що знімок у буфері.
     private func flashIcon() {
-        guard NSPasteboard.general.canReadItem(withDataConformingToTypes: [NSPasteboard.PasteboardType.png.rawValue,
-                                                                          NSPasteboard.PasteboardType.tiff.rawValue])
-        else { return }
         let original = statusItem.button?.image
         statusItem.button?.image = NSImage(systemSymbolName: "checkmark.circle.fill", accessibilityDescription: Text.done.s)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { [weak self] in

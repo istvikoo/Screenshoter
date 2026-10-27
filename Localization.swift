@@ -91,6 +91,7 @@ enum Text {
     case upToDate, updateCheckFailed, updateNoInstaller, updateBadSignature, updateDownloadFailed
     case updateAvailableTitle, updateAvailableBody, updateInstall, updateLater, updateSkip
     case autoCheckUpdates, versionLabel, checkNow
+    case saveToFolder, chooseFolder, showInFinder, chooseFolderMessage, menuOpenFolder, saveFailed
 
     var s: String { Text.table[Language.current]?[self] ?? Text.table[.en]![self]! }
 
@@ -135,6 +136,12 @@ enum Text {
             .autoCheckUpdates: "Автоматично перевіряти оновлення",
             .versionLabel: "Версія %@",
             .checkNow: "Перевірити зараз",
+            .saveToFolder: "Також зберігати знімки в папку",
+            .chooseFolder: "Обрати…",
+            .showInFinder: "Показати",
+            .chooseFolderMessage: "Куди зберігати знімки?",
+            .menuOpenFolder: "Відкрити папку зі знімками",
+            .saveFailed: "Знімок у буфері, але зберегти його в %@ не вдалося: %@",
         ],
         .en: [
             .appName: "Screenshoter",
@@ -174,6 +181,12 @@ enum Text {
             .autoCheckUpdates: "Automatically check for updates",
             .versionLabel: "Version %@",
             .checkNow: "Check Now",
+            .saveToFolder: "Also save screenshots to a folder",
+            .chooseFolder: "Choose…",
+            .showInFinder: "Show",
+            .chooseFolderMessage: "Where should screenshots be saved?",
+            .menuOpenFolder: "Open Screenshots Folder",
+            .saveFailed: "The screenshot is in the clipboard, but saving it to %@ failed: %@",
         ],
     ]
 }
