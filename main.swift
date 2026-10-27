@@ -15,6 +15,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let hotKeys = HotKeyManager()
     private var settingsWindow: SettingsWindowController?
     private var actionItems: [Action: NSMenuItem] = [:]
+    private let updater = Updater()
+    private var updateItem: NSMenuItem?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupMenuBar()
@@ -23,6 +25,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         hotKeys.onPress = { [weak self] action in self?.capture(action) }
         hotKeys.reload()
         updateMenuTitles()
+        updater.onStateChange = { [weak self] in self?.updateUpdateItem() }
+        updater.start()
     }
 
     // Повторне відкриття Screenshoter.app (коли він уже працює) — показати налаштування.
@@ -58,6 +62,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             menu.addItem(item)
         }
         menu.addItem(.separator())
+        let update = NSMenuItem(title: "", action: #selector(updateClicked), keyEquivalent: "")
+        update.target = self
+        updateItem = update
+        menu.addItem(update)
+        updateUpdateItem()
         let settings = NSMenuItem(title: Text.menuSettings.s, action: #selector(openSettings), keyEquivalent: ",")
         settings.target = self
         menu.addItem(settings)
@@ -82,9 +91,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { self.capture(action) }
     }
 
+    // MARK: - Оновлення
+
+    private func updateUpdateItem() {
+        guard let item = updateItem else { return }
+        switch updater.state {
+        case .idle:               item.title = Text.menuCheckUpdates.s; item.isEnabled = true
+        case .checking:           item.title = Text.menuCheckUpdates.s; item.isEnabled = false
+        case .available(let r):   item.title = Text.menuUpdateAvailable.format(r.version); item.isEnabled = true
+        case .downloading:        item.title = Text.menuDownloading.s; item.isEnabled = false
+        }
+    }
+
+    @objc private func updateClicked() {
+        if case .available(let release) = updater.state {
+            updater.offer(release)
+        } else {
+            updater.check(userInitiated: true)
+        }
+    }
+
     @objc private func openSettings() {
         if settingsWindow == nil {
-            settingsWindow = SettingsWindowController(hotKeys: hotKeys) { [weak self] in
+            settingsWindow = SettingsWindowController(hotKeys: hotKeys, updater: updater) { [weak self] in
                 self?.hotKeys.reload()
                 self?.updateMenuTitles()
             }

@@ -96,6 +96,7 @@ final class ShortcutField: NSButton {
 
 final class SettingsWindowController: NSWindowController, NSWindowDelegate {
     private let hotKeys: HotKeyManager
+    private let updater: Updater
     private let onShortcutsChanged: () -> Void
 
     private var fields: [Action: ShortcutField] = [:]
@@ -106,8 +107,9 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
     private weak var launchCheckbox: NSButton?
     private weak var approvalRow: NSView?
 
-    init(hotKeys: HotKeyManager, onShortcutsChanged: @escaping () -> Void) {
+    init(hotKeys: HotKeyManager, updater: Updater, onShortcutsChanged: @escaping () -> Void) {
         self.hotKeys = hotKeys
+        self.updater = updater
         self.onShortcutsChanged = onShortcutsChanged
 
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 420, height: 200),
@@ -198,6 +200,17 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
         approval.spacing = 6
         approvalRow = approval
 
+        // Оновлення
+        let autoUpdate = NSButton(checkboxWithTitle: Text.autoCheckUpdates.s, target: self,
+                                  action: #selector(autoUpdateToggled(_:)))
+        autoUpdate.state = Updater.autoCheck ? .on : .off
+        let version = NSTextField(labelWithString: Text.versionLabel.format(Updater.currentVersion))
+        version.textColor = .secondaryLabelColor
+        let checkNow = NSButton(title: Text.checkNow.s, target: self, action: #selector(checkUpdatesNow))
+        checkNow.controlSize = .small
+        let versionRow = NSStackView(views: [version, checkNow])
+        versionRow.spacing = 8
+
         let hint = NSTextField(wrappingLabelWithString: Text.hint.s)
         hint.textColor = .secondaryLabelColor
         hint.font = .systemFont(ofSize: NSFont.smallSystemFontSize)
@@ -210,7 +223,7 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
         let buttons = NSStackView(views: [reset, quit])
         buttons.spacing = 8
 
-        let stack = NSStackView(views: [grid, hint, statusLabel, showIcon, iconHint, launch, approval, buttons])
+        let stack = NSStackView(views: [grid, hint, statusLabel, showIcon, iconHint, launch, approval, autoUpdate, versionRow, buttons])
         stack.orientation = .vertical
         stack.alignment = .leading
         stack.spacing = 14
@@ -237,6 +250,18 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
             showStatus(Text.launchFailed.format(error), isError: true)
         }
         refreshLaunchAtLogin()
+    }
+
+    @objc private func autoUpdateToggled(_ sender: NSButton) {
+        Updater.autoCheck = sender.state == .on
+    }
+
+    @objc private func checkUpdatesNow() {
+        if case .available(let release) = updater.state {
+            updater.offer(release)
+        } else {
+            updater.check(userInitiated: true)
+        }
     }
 
     @objc private func openLoginItems() { LaunchAtLogin.openSystemSettings() }

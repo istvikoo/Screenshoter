@@ -6,7 +6,7 @@ set -e
 cd "$(dirname "$0")"
 
 APP="Screenshoter.app"
-VERSION="1.0.1"   # версія програми — береться і для установщика
+VERSION="1.1.0"   # версія програми — береться і для установщика
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp Resources/AppIcon.icns "$APP/Contents/Resources/"

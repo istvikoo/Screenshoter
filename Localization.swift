@@ -87,6 +87,10 @@ enum Text {
     case keySpace
     case showIcon, iconHiddenHint
     case launchAtLogin, launchNeedsApproval, openLoginItems, launchFailed
+    case menuCheckUpdates, menuUpdateAvailable, menuDownloading
+    case upToDate, updateCheckFailed, updateNoInstaller, updateBadSignature, updateDownloadFailed
+    case updateAvailableTitle, updateAvailableBody, updateInstall, updateLater, updateSkip
+    case autoCheckUpdates, versionLabel, checkNow
 
     var s: String { Text.table[Language.current]?[self] ?? Text.table[.en]![self]! }
 
@@ -115,6 +119,22 @@ enum Text {
             .launchNeedsApproval: "macOS просить підтвердити автозапуск: увімкніть Screenshoter в «Об'єктах входу».",
             .openLoginItems: "Відкрити «Об'єкти входу»",
             .launchFailed: "Не вдалося змінити автозапуск: %@",
+            .menuCheckUpdates: "Перевірити оновлення…",
+            .menuUpdateAvailable: "Оновити до версії %@…",
+            .menuDownloading: "Завантаження оновлення…",
+            .upToDate: "У вас найновіша версія (%@).",
+            .updateCheckFailed: "Не вдалося перевірити оновлення: %@",
+            .updateNoInstaller: "Нова версія є, але в релізі немає підписаного установщика. Спробуйте пізніше.",
+            .updateBadSignature: "Оновлення не пройшло перевірку підпису, тож його не буде встановлено. Можливо, файл пошкоджено або підмінено.",
+            .updateDownloadFailed: "Не вдалося завантажити оновлення: %@",
+            .updateAvailableTitle: "Доступна нова версія Screenshoter %@",
+            .updateAvailableBody: "У вас версія %@. Оновлення буде завантажено й перевірено, після чого відкриється установщик.",
+            .updateInstall: "Оновити",
+            .updateLater: "Пізніше",
+            .updateSkip: "Пропустити цю версію",
+            .autoCheckUpdates: "Автоматично перевіряти оновлення",
+            .versionLabel: "Версія %@",
+            .checkNow: "Перевірити зараз",
         ],
         .en: [
             .appName: "Screenshoter",
@@ -138,6 +158,22 @@ enum Text {
             .launchNeedsApproval: "macOS needs your approval: turn on Screenshoter in Login Items.",
             .openLoginItems: "Open Login Items",
             .launchFailed: "Couldn't change launch at login: %@",
+            .menuCheckUpdates: "Check for Updates…",
+            .menuUpdateAvailable: "Update to Version %@…",
+            .menuDownloading: "Downloading Update…",
+            .upToDate: "You're up to date (%@).",
+            .updateCheckFailed: "Couldn't check for updates: %@",
+            .updateNoInstaller: "A new version exists, but its release has no signed installer yet. Try again later.",
+            .updateBadSignature: "The update failed signature verification and won't be installed. The file may be damaged or tampered with.",
+            .updateDownloadFailed: "Couldn't download the update: %@",
+            .updateAvailableTitle: "Screenshoter %@ is available",
+            .updateAvailableBody: "You have version %@. The update will be downloaded and verified, then the installer will open.",
+            .updateInstall: "Update",
+            .updateLater: "Later",
+            .updateSkip: "Skip This Version",
+            .autoCheckUpdates: "Automatically check for updates",
+            .versionLabel: "Version %@",
+            .checkNow: "Check Now",
         ],
     ]
 }

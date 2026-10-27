@@ -18,6 +18,7 @@
 - Мова інтерфейсу: українська / English
 - Можна сховати іконку з рядка меню
 - Автозапуск при вході в систему
+- Автооновлення з GitHub з перевіркою цифрового підпису (з версії 1.1.0)
 - Займає ~24 МБ пам'яті, 0% процесора у фоні
 - Універсальна програма: Apple Silicon та Intel
 
@@ -41,16 +42,35 @@
 ./build.sh              # зібрати Screenshoter.app
 ./build.sh install      # зібрати й встановити в /Applications
 ./make_installer.sh     # зібрати установщик dist/Screenshoter-<версія>.pkg
+./release.sh            # опублікувати реліз на GitHub (див. нижче)
 ```
 
 Версія задається в `build.sh` (`VERSION=...`). Іконка — `Resources/AppIcon.png`,
 після її зміни запустіть `./Resources/make_icon.sh`.
+
+## Оновлення
+
+Програма раз на добу (або через «Перевірити оновлення…» в меню) питає GitHub про останній реліз.
+Якщо є новіша версія, вона завантажує `Screenshoter-<версія>.pkg` і `.pkg.sig`, перевіряє підпис
+**Ed25519** вшитим публічним ключем і лише тоді відкриває установщик. Файл з неправильним підписом
+відкидається. Автоперевірку можна вимкнути в налаштуваннях.
+
+**Як випустити нову версію:**
+
+1. Підніміть `VERSION` у `build.sh` і закомітьте зміни.
+2. Запустіть `./release.sh` (або `./release.sh notes.md` зі своїм описом).
+   Скрипт збере установщик, підпише його, поставить тег і створить реліз на GitHub.
+
+Приватний ключ підпису лежить у `~/.config/screenshoter/update_signing_key` і **не** зберігається
+в репозиторії (`swift Tools/updatekey.swift` — створити, підписати, перевірити).
+Зробіть його резервну копію: без нього не вийде випустити оновлення для вже встановлених програм.
 
 ## Як це працює
 
 - Гарячі клавіші реєструються через Carbon `RegisterEventHotKey` — дозвіл «Універсальний доступ» не потрібен.
 - Знімок робить системна утиліта `screencapture -c` (одразу в буфер).
 - Автозапуск — через `SMAppService` (Об'єкти входу).
+- Оновлення — GitHub Releases API + підпис Ed25519 (CryptoKit).
 
 | Файл | Що в ньому |
 |---|---|
@@ -58,6 +78,9 @@
 | `Shortcuts.swift` | комбінації клавіш: збереження, назви, реєстрація |
 | `SettingsWindow.swift` | вікно налаштувань |
 | `Localization.swift` | переклади, автозапуск, інші налаштування |
+| `Updater.swift` | перевірка, завантаження й перевірка підпису оновлень |
+| `Tools/updatekey.swift` | ключі підпису оновлень |
+| `release.sh` | публікація релізу на GitHub |
 | `Installer/` | скрипти й екран привітання установщика |
 
 ---
@@ -71,6 +94,7 @@ A tiny macOS screenshot tool: press a hotkey and the screenshot goes straight to
 - **⌥⇧S** — select an area (Space — pick a window, Esc — cancel)
 - **⌥⇧A** — full screen
 - Custom shortcuts, Ukrainian / English UI, hideable menu bar icon, launch at login
+- Auto-update from GitHub Releases with Ed25519 signature verification (since 1.1.0)
 - ~24 MB RAM, universal (Apple Silicon + Intel), macOS 13+
 
 **Install:** download the `.pkg` from [Releases](https://github.com/istvikoo/Screenshoter/releases), run it,
@@ -78,6 +102,7 @@ and allow **Screen Recording** on the first capture. The installer is not signed
 so you may need to right-click → Open.
 
 **Build:** `./build.sh`, `./build.sh install`, or `./make_installer.sh`.
+**Release:** bump `VERSION` in `build.sh`, commit, run `./release.sh`.
 
 ## License
 
