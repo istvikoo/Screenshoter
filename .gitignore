@@ -1,0 +1,6 @@
+# macOS
+.DS_Store
+
+# Результати збірки (збираються скриптами build.sh / make_installer.sh)
+Screenshoter.app/
+dist/
