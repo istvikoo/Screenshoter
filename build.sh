@@ -6,7 +6,7 @@ set -e
 cd "$(dirname "$0")"
 
 APP="Screenshoter.app"
-VERSION="1.0"   # версія програми — береться і для установщика
+VERSION="1.0.1"   # версія програми — береться і для установщика
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp Resources/AppIcon.icns "$APP/Contents/Resources/"
@@ -37,8 +37,11 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 </plist>
 PLIST
 
-# Локальний підпис, щоб macOS запам'ятала дозвіл на запис екрана.
-codesign --force --sign - "$APP"
+# Локальний підпис. Явна вимога «designated => identifier …» потрібна, щоб macOS
+# упізнавала програму за ідентифікатором, а не за відбитком збірки (cdhash).
+# Інакше після кожного перезбирання дозвіл на запис екрана «злітає».
+codesign --force --sign - --identifier local.screenshoter \
+         --requirements '=designated => identifier "local.screenshoter"' "$APP"
 
 echo "Готово: $(pwd)/$APP"
 
