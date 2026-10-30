@@ -24,6 +24,10 @@
 - Займає ~12 МБ пам'яті у фоні, 0% процесора; програма — ~440 КБ
 - Універсальна програма: Apple Silicon та Intel
 
+<p align="center">
+  <img src="docs/settings.png" width="438" alt="Вікно налаштувань Screenshoter">
+</p>
+
 ## Встановлення
 
 1. Завантажте `Screenshoter-<версія>.pkg` зі сторінки [Releases](https://github.com/istvikoo/Screenshoter/releases).
@@ -110,6 +114,10 @@ It lives in the menu bar, takes no space in the Dock and does nothing in the bac
 - Auto-update from GitHub with digital signature verification (since 1.1.0)
 - About 12 MB of RAM and 0% CPU when idle; the app itself is about 440 KB
 - Universal app: Apple Silicon and Intel, macOS 13 or later
+
+<p align="center">
+  <img src="docs/settings.png" width="438" alt="Screenshoter Settings window">
+</p>
 
 ### Installation
 
