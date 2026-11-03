@@ -77,8 +77,9 @@ final class ShortcutField: NSButton {
         }
 
         let candidate = Shortcut(event: event)
-        // Без модифікаторів дозволяємо тільки F1–F20, щоб не зламати звичайне друкування.
-        guard candidate.modifiers != 0 || candidate.isFunctionKey else {
+        // Без модифікаторів (або лише з ⇧) дозволяємо тільки F1–F20, щоб не зламати звичайне
+        // друкування: ⇧S перехопив би велику «S» у всіх програмах.
+        guard candidate.modifiers & ~UInt32(shiftKey) != 0 || candidate.isFunctionKey else {
             NSSound.beep()
             return nil
         }
@@ -102,6 +103,9 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
 
     /// Ширина вмісту вікна; довгі підказки переносяться в її межах.
     private static let contentWidth: CGFloat = 400
+
+    /// Де стояло вікно, коли його закрили (вікно звільняється після закриття).
+    private static var lastTopLeft: NSPoint?
 
     private var fields: [Action: ShortcutField] = [:]
     private let statusLabel = NSTextField(wrappingLabelWithString: "")
@@ -136,7 +140,10 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
     func show() {
         refreshStatus()
         refreshLaunchAtLogin()   // користувач міг змінити це в Системних параметрах
-        window?.center()
+        // Вперше — по центру, далі — там, де вікно було востаннє (поки програма працює).
+        if !(window?.isVisible ?? false) {
+            if let point = Self.lastTopLeft { window?.setFrameTopLeftPoint(point) } else { window?.center() }
+        }
         NSApp.activate(ignoringOtherApps: true)
         showWindow(nil)
         window?.makeKeyAndOrderFront(nil)
@@ -167,11 +174,17 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
             let label = NSTextField(labelWithString: action.title + ":")
             let field = ShortcutField(shortcut: ShortcutStore.shortcut(for: action))
             field.onChange = { [weak self] new in self?.apply(new, to: action) ?? false }
-            field.onRecordingChanged = { [weak self] recording in
+            field.onRecordingChanged = { [weak self, weak field] recording in
                 guard let self else { return }
-                // Поки записуємо — вимикаємо гарячі клавіші, щоб не спрацював скріншот.
-                recording ? self.hotKeys.unregisterAll() : self.hotKeys.reload()
-                if !recording { self.refreshStatus() }
+                if recording {
+                    // Записує лише одне поле: інше, якщо воно чекало натискання, зупиняємо.
+                    self.fields.values.filter { $0 !== field }.forEach { $0.stopRecording() }
+                    // Поки записуємо — вимикаємо гарячі клавіші, щоб не спрацював скріншот.
+                    self.hotKeys.unregisterAll()
+                } else {
+                    self.hotKeys.reload()
+                    self.refreshStatus()
+                }
             }
             fields[action] = field
             rows.append([label, field])
@@ -395,8 +408,14 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
         statusLabel.isHidden = text.isEmpty
     }
 
+    /// Пішли з вікна посеред запису — скасовуємо його, інакше гарячі клавіші лишаться вимкненими.
+    func windowDidResignKey(_ notification: Notification) {
+        fields.values.forEach { $0.stopRecording() }
+    }
+
     func windowWillClose(_ notification: Notification) {
         fields.values.forEach { $0.stopRecording() }
+        if let frame = window?.frame { Self.lastTopLeft = NSPoint(x: frame.minX, y: frame.maxY) }
         // Звільняємо вікно вже після того, як AppKit його закриє.
         DispatchQueue.main.async { [onClose] in onClose() }
     }

@@ -21,6 +21,8 @@ fail() { echo "✗ $1" >&2; exit 1; }
 [[ -n "$VERSION" ]] || fail "Не знайшов VERSION у build.sh"
 [[ "$(git branch --show-current)" == "main" ]] || fail "Публікувати треба з гілки main"
 git diff --quiet && git diff --cached --quiet || fail "Є незакомічені зміни — спершу закомітьте їх"
+# build.sh збирає всі *.swift з папки — чужий файл не має потрапити в реліз.
+[[ -z "$(git ls-files --others --exclude-standard -- '*.swift')" ]] || fail "Є не додані в git файли .swift — закомітьте або приберіть їх"
 git rev-parse -q --verify "refs/tags/$TAG" >/dev/null && fail "Тег $TAG уже існує — підніміть VERSION у build.sh"
 gh auth status >/dev/null 2>&1 || fail "gh не авторизований: gh auth login"
 [[ -z "$NOTES_FILE" || -f "$NOTES_FILE" ]] || fail "Немає файлу з описом: $NOTES_FILE"
@@ -65,7 +67,9 @@ EOF
 
 # --- Публікація ---
 git tag -a "$TAG" -m "Screenshoter $VERSION"
-git push origin main "$TAG"
+# --atomic: або відправляться і код, і тег, або нічого. Не вдалося — прибираємо тег,
+# щоб скрипт можна було просто запустити ще раз.
+git push --atomic origin main "$TAG" || { git tag -d "$TAG" >/dev/null; fail "Не вдалося відправити на GitHub"; }
 gh release create "$TAG" "$PKG" "$PKG.sig" --repo "$REPO" \
     --title "Screenshoter $VERSION" --notes-file "$NOTES" --verify-tag --latest
 

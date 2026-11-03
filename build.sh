@@ -6,7 +6,7 @@ set -e
 cd "$(dirname "$0")"
 
 APP="Screenshoter.app"
-VERSION="1.3.0"   # версія програми — береться і для установщика
+VERSION="1.3.1"   # версія програми — береться і для установщика
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp Resources/AppIcon.icns "$APP/Contents/Resources/"
@@ -56,9 +56,15 @@ echo "Готово: $(pwd)/$APP"
 # ./build.sh install — ще й поставити в «Програми» і запустити звідти.
 # Для автозапуску краще, щоб програма жила саме там.
 if [[ "$1" == "install" ]]; then
+    # Програму, поставлену установщиком .pkg, записав root — без sudo її не замінити.
+    SUDO=""
+    if [[ -e "/Applications/$APP" && ! -w "/Applications/$APP/Contents" ]]; then
+        echo "Програму встановлено установщиком — потрібен пароль адміністратора."
+        SUDO="sudo"
+    fi
     pkill -x Screenshoter || true
-    rm -rf "/Applications/$APP"
-    cp -R "$APP" /Applications/
+    $SUDO rm -rf "/Applications/$APP"
+    $SUDO cp -R "$APP" /Applications/
     open "/Applications/$APP"
     echo "Встановлено: /Applications/$APP"
 fi

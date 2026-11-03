@@ -65,8 +65,14 @@ final class Updater {
 
     // MARK: - Перевірка
 
+    /// Користувач натиснув «Перевірити» під час автоперевірки — покажемо йому її результат.
+    private var userWaiting = false
+
     func check(userInitiated: Bool) {
-        if case .checking = state { return }
+        if case .checking = state {
+            if userInitiated { userWaiting = true }
+            return
+        }
         if case .downloading = state { return }
         let previous = state
         state = .checking
@@ -97,6 +103,8 @@ final class Updater {
 
     private func handleCheck(data: Data?, response: URLResponse?, error: Error?,
                              userInitiated: Bool, previous: State) {
+        let userInitiated = userInitiated || userWaiting
+        userWaiting = false
         // Невдала перевірка (немає інтернету, збій GitHub) не рахується: спробуємо знову
         // за годину, а вже знайдене оновлення лишається в меню.
         if let error {
