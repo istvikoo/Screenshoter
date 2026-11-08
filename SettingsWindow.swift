@@ -338,20 +338,15 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
         Preferences.autoCheckUpdates = sender.state == .on
     }
 
-    @objc private func checkUpdatesNow() {
-        if case .available(let release) = updater.state {
-            updater.offer(release)
-        } else {
-            updater.check(userInitiated: true)
-        }
-    }
+    @objc private func checkUpdatesNow() { updater.checkOrOffer() }
 
     @objc private func openLoginItems() { LaunchAtLogin.openSystemSettings() }
 
     private func refreshLaunchAtLogin() {
         // «Потребує підтвердження» теж показуємо як увімкнене — користувач його вже обрав.
-        launchCheckbox?.state = (LaunchAtLogin.isEnabled || LaunchAtLogin.needsApproval) ? .on : .off
-        approvalRow?.isHidden = !LaunchAtLogin.needsApproval
+        let status = LaunchAtLogin.status   // запит до системи — один раз
+        launchCheckbox?.state = (status == .enabled || status == .requiresApproval) ? .on : .off
+        approvalRow?.isHidden = status != .requiresApproval
     }
 
     @objc private func languageSelected(_ sender: NSPopUpButton) {
@@ -383,10 +378,11 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
     }
 
     @objc private func resetDefaults() {
+        // Інакше поле лишилося б у режимі запису з уже ввімкненими гарячими клавішами.
+        fields.values.forEach { $0.stopRecording() }
         ShortcutStore.resetAll()
         for (action, field) in fields { field.shortcut = ShortcutStore.shortcut(for: action) }
-        hotKeys.reload()
-        onShortcutsChanged()
+        onShortcutsChanged()   // перереєструє гарячі клавіші й оновить меню
         refreshStatus()
     }
 

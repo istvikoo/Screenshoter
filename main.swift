@@ -155,13 +155,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
 
-    @objc private func updateClicked() {
-        if case .available(let release) = updater.state {
-            updater.offer(release)
-        } else {
-            updater.check(userInitiated: true)
-        }
-    }
+    @objc private func updateClicked() { updater.checkOrOffer() }
 
     @objc private func openSettings() {
         if settingsWindow == nil {

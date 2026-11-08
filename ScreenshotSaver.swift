@@ -21,6 +21,9 @@ enum ScreenshotSaver {
         return formatter
     }()
 
+    /// Послідовна черга: два знімки за одну секунду не виберуть одне й те саме ім'я файлу.
+    private static let queue = DispatchQueue(label: "local.screenshoter.save", qos: .userInitiated)
+
     /// Шлях для показу: /Users/імʼя/Pictures/… → ~/Pictures/…
     static var folderDisplayPath: String { (folder.path as NSString).abbreviatingWithTildeInPath }
 
@@ -32,7 +35,7 @@ enum ScreenshotSaver {
         let tiff = png == nil ? pasteboard.data(forType: .tiff) : nil
         let target = folder
 
-        DispatchQueue.global(qos: .userInitiated).async {
+        queue.async {
             let result: String?
             do {
                 guard let data = png ?? tiff.flatMap({ NSBitmapImageRep(data: $0)?.representation(using: .png, properties: [:]) })

@@ -65,6 +65,11 @@ final class Updater {
 
     // MARK: - Перевірка
 
+    /// Кнопка в меню й у налаштуваннях: оновлення вже знайдено — запропонувати, інакше перевірити.
+    func checkOrOffer() {
+        if case .available(let release) = state { offer(release) } else { check(userInitiated: true) }
+    }
+
     /// Користувач натиснув «Перевірити» під час автоперевірки — покажемо йому її результат.
     private var userWaiting = false
 

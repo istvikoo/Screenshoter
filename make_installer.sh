@@ -18,6 +18,8 @@ ditto --norsrc --noextattr --noqtn Screenshoter.app "$WORK/root/Screenshoter.app
 pkgbuild --analyze --root "$WORK/root" "$WORK/component.plist" >/dev/null
 /usr/libexec/PlistBuddy -c "Add :0:BundleIsRelocatable bool false" "$WORK/component.plist"
 
+# Можливі «write: Permission denied» (по одному на файл) — pkgbuild не може скопіювати
+# системний атрибут com.apple.provenance. На пакет це не впливає.
 pkgbuild --root "$WORK/root" \
          --component-plist "$WORK/component.plist" \
          --scripts Installer/scripts \

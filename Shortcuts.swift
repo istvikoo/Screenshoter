@@ -73,22 +73,24 @@ struct Shortcut: Codable, Equatable {
 
     // MARK: Назви клавіш
 
-    private static let functionKeys: Set<UInt32> = Set([
+    /// Коди F1…F20 по порядку (самі коди йдуть не підряд).
+    private static let fKeyCodes: [UInt32] = [
         kVK_F1, kVK_F2, kVK_F3, kVK_F4, kVK_F5, kVK_F6, kVK_F7, kVK_F8, kVK_F9, kVK_F10,
         kVK_F11, kVK_F12, kVK_F13, kVK_F14, kVK_F15, kVK_F16, kVK_F17, kVK_F18, kVK_F19, kVK_F20,
-    ].map { UInt32($0) })
+    ].map { UInt32($0) }
+
+    private static let functionKeys = Set(fKeyCodes)
 
     private static let specialNames: [UInt32: String] = {
-        var d: [Int: String] = [
+        let named: [Int: String] = [
             kVK_Return: "↩", kVK_Tab: "⇥", kVK_Delete: "⌫",
             kVK_ForwardDelete: "⌦", kVK_Escape: "⎋", kVK_LeftArrow: "←", kVK_RightArrow: "→",
             kVK_UpArrow: "↑", kVK_DownArrow: "↓", kVK_Home: "↖", kVK_End: "↘",
             kVK_PageUp: "⇞", kVK_PageDown: "⇟",
         ]
-        let fKeys = [kVK_F1, kVK_F2, kVK_F3, kVK_F4, kVK_F5, kVK_F6, kVK_F7, kVK_F8, kVK_F9, kVK_F10,
-                     kVK_F11, kVK_F12, kVK_F13, kVK_F14, kVK_F15, kVK_F16, kVK_F17, kVK_F18, kVK_F19, kVK_F20]
-        for (i, k) in fKeys.enumerated() { d[k] = "F\(i + 1)" }
-        return Dictionary(uniqueKeysWithValues: d.map { (UInt32($0.key), $0.value) })
+        var d = Dictionary(uniqueKeysWithValues: named.map { (UInt32($0.key), $0.value) })
+        for (i, k) in fKeyCodes.enumerated() { d[k] = "F\(i + 1)" }
+        return d
     }()
 
     /// Назва клавіші латиницею, навіть якщо зараз увімкнена українська розкладка.

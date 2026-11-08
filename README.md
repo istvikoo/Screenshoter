@@ -150,7 +150,8 @@ again while it's running (handy when the icon is hidden). There you can:
 
 - **Change the language** (Українська / English). The change applies immediately.
 - **Assign shortcuts.** Click a field and press a new combination. Esc cancels, ⌫ clears it.
-  A shortcut needs at least one modifier (⌘ ⌥ ⌃ ⇧); only F1–F20 work on their own.
+  A shortcut needs at least one of ⌘ ⌥ ⌃ (⇧ alone isn't enough: ⇧S would block typing a capital S);
+  only F1–F20 work on their own.
   You'll get a warning if the combination is already used by the other action or taken by another app.
 - **Show or hide the menu bar icon.** While it's hidden, shortcuts still work and the *Quit*
   button is available in Settings.

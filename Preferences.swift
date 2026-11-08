@@ -73,10 +73,8 @@ enum Preferences {
 
 /// Автозапуск при вході в систему (Системні параметри → Загальні → Об'єкти входу).
 enum LaunchAtLogin {
-    static var isEnabled: Bool { SMAppService.mainApp.status == .enabled }
-
-    /// Користувач має ще дозволити автозапуск у Системних параметрах.
-    static var needsApproval: Bool { SMAppService.mainApp.status == .requiresApproval }
+    /// .requiresApproval — користувач має ще дозволити автозапуск у Системних параметрах.
+    static var status: SMAppService.Status { SMAppService.mainApp.status }
 
     /// Повертає текст помилки, якщо не вдалося.
     @discardableResult
@@ -115,7 +113,7 @@ enum LaunchAtLogin {
     /// Викликається при запуску програми: при першому запуску вмикає автозапуск.
     static func applyDefaultOnFirstLaunch() {
         guard shouldEnableByDefault(bundlePath: Bundle.main.bundlePath, defaults: .standard),
-              SMAppService.mainApp.status == .notRegistered
+              status == .notRegistered
         else { return }
         set(true)
     }

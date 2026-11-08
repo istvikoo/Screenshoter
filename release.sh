@@ -71,6 +71,8 @@ git tag -a "$TAG" -m "Screenshoter $VERSION"
 # щоб скрипт можна було просто запустити ще раз.
 git push --atomic origin main "$TAG" || { git tag -d "$TAG" >/dev/null; fail "Не вдалося відправити на GitHub"; }
 gh release create "$TAG" "$PKG" "$PKG.sig" --repo "$REPO" \
-    --title "Screenshoter $VERSION" --notes-file "$NOTES" --verify-tag --latest
+    --title "Screenshoter $VERSION" --notes-file "$NOTES" --verify-tag --latest \
+    || fail "Код і тег уже на GitHub, але реліз не створено. Повторіть лише цей крок:
+  gh release create $TAG $PKG $PKG.sig --repo $REPO --title \"Screenshoter $VERSION\" --verify-tag --latest"
 
 echo "✓ Опубліковано: https://github.com/$REPO/releases/tag/$TAG"
