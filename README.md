@@ -21,7 +21,7 @@
 - За бажанням — лівий клік по іконці одразу знімає область, а меню відкривається правим кліком (вмикається в налаштуваннях)
 - Автозапуск при вході в систему (вмикається сам при першому запуску, вимкнути — в налаштуваннях)
 - Автооновлення з GitHub з перевіркою цифрового підпису (з версії 1.1.0)
-- Займає ~12 МБ пам'яті у фоні, 0% процесора; програма — ~440 КБ
+- Займає ~12 МБ пам'яті після запуску (до ~30 МБ після знімків), 0% процесора у фоні; програма — ~450 КБ
 - Універсальна програма: Apple Silicon та Intel
 
 <p align="center">
@@ -112,7 +112,7 @@ It lives in the menu bar, takes no space in the Dock and does nothing in the bac
 - Optionally make a left click on the icon capture an area right away, with the menu on right-click (off by default)
 - Launch at login, enabled automatically on first launch and easy to turn off in Settings
 - Auto-update from GitHub with digital signature verification (since 1.1.0)
-- About 12 MB of RAM and 0% CPU when idle; the app itself is about 440 KB
+- About 12 MB of RAM after launch (up to about 30 MB once you've taken screenshots) and 0% CPU when idle; the app itself is about 450 KB
 - Universal app: Apple Silicon and Intel, macOS 13 or later
 
 <p align="center">
